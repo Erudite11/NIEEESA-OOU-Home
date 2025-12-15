@@ -11,7 +11,7 @@ export default function Types(){
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4"> {level} Level / {semester} / Choose Material Type</h1>
+      <h1 className="text-lg font-bold font-sans text-gray-700 mb-4"> {level} Level / {semester} / Material Type</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {types.map(t => (
           <Card key={t} className="hover:shadow-md">

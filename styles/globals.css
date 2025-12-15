@@ -2,10 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #__next {
-  height: 100%;
+
+body { @apply bg-gray-50 text-gray-800; }
+
+/* ---------- MARQUEE (wrapper + track + item) ---------- */
+.marquee-wrapper {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  display: block;
 }
 
-body {
-  @apply bg-gray-50 text-gray-800;
+.marquee-track {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 25s linear infinite;
+}
+
+/* pause on hover */
+.marquee-wrapper:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* small spacer between repeats */
+.marquee-item {
+  display: inline-block;
+  padding-right: 2.5rem; /* gap between repeats */
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #06b6d4, #3b82f6, #9333ea);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-size: 200% 100%;
+  animation: gradient 3s ease infinite;
+}
+
+/* fallback keyframes (keeps dev predictable if Tailwind utilities are delayed) */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

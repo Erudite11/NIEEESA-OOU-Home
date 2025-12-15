@@ -41,7 +41,7 @@ export default function Materials(){
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Materials</h1>
+      <h1 className="text-lg font-bold font-sans text-gray-700 mb-4">Materials</h1>
       <div className="flex items-center gap-4 mb-4">
   <Input placeholder="Search by title..." value={search} onChange={(e: ChangeEvent<HTMLInputElement>)=>{ setSearch(e.target.value); setPage(1) }} />
       </div>

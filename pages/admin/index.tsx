@@ -108,7 +108,7 @@ export default function Admin(): JSX.Element {
           throw new Error(`Supabase upload failed: Bucket not found. Create the bucket named '${bucket}' in your Supabase project (Storage → Buckets) or set NEXT_PUBLIC_SUPABASE_BUCKET to an existing bucket.`)
         }
       } catch (e) {
-        // fallthrough — we'll show the raw body text below
+
       }
       throw new Error('Supabase upload failed: ' + (bodyText || uploadRes.statusText || uploadRes.status))
     }
@@ -244,14 +244,14 @@ export default function Admin(): JSX.Element {
         {cloudinaryConfigured ? (
           <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded text-sm">Cloudinary env present</span>
         ) : (
-          <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">Cloudinary not configured — using local uploads</span>
+          <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">Cloudinary</span>
         )}
         {lastStorage && <span className="ml-3 text-xs text-gray-500">Last upload: {lastStorage}</span>}
       </div>
 
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-4  text-cyan-600">Admin Dashboard</h1>
 
-      <form onSubmit={handleUpload} className="p-6 bg-white rounded shadow space-y-4">
+      <form onSubmit={handleUpload} className="p-6 bg-sky-100 rounded shadow space-y-4">
         {statusMessage && (
           <div className={`p-3 rounded text-sm ${statusKind === 'error' ? 'bg-red-50 text-red-800' : statusKind === 'success' ? 'bg-green-50 text-green-800' : 'bg-blue-50 text-blue-800'}`}>
             {statusMessage}
@@ -261,25 +261,25 @@ export default function Admin(): JSX.Element {
 
         <div>
           <label className="block text-sm font-medium">Title</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 block w-full border rounded p-2" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 bg-blue-50 block w-full border rounded p-2" />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <select value={level} onChange={(e) => setLevel(e.target.value)} className="p-2 border rounded">
+          <select value={level} onChange={(e) => setLevel(e.target.value)} className="p-2 bg-blue-50 border rounded">
             {levels.map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>
             ))}
           </select>
-          <select value={semester} onChange={(e) => setSemester(e.target.value)} className="p-2 border rounded">
+          <select value={semester} onChange={(e) => setSemester(e.target.value)} className="p-2 bg-blue-50 border rounded">
             {semesters.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
             ))}
           </select>
-          <select value={fileType} onChange={(e) => setFileType(e.target.value)} className="p-2 border rounded">
+          <select value={fileType} onChange={(e) => setFileType(e.target.value)} className="p-2 bg-blue-50 border rounded">
             {types.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -290,7 +290,7 @@ export default function Admin(): JSX.Element {
 
         <div>
           <label className="block text-sm font-medium">File</label>
-          <input type="file" onChange={handleFile} className="mt-1" />
+          <input type="file" onChange={handleFile} className="mt-1 bg-blue-50" />
           {supabaseConfigured && (
             <div className="mt-2 text-sm">
               <label className="inline-flex items-center">
@@ -302,7 +302,7 @@ export default function Admin(): JSX.Element {
         </div>
 
         <div>
-          <button className="px-4 py-2 bg-green-600 text-white rounded" disabled={loading}>
+          <button className="px-4 py-2  bg-gradient-to-l from-fuchsia-400 to-green-400 text-white rounded" disabled={loading}>
             {loading ? 'Uploading...' : 'Upload'}
           </button>
         </div>
@@ -311,7 +311,7 @@ export default function Admin(): JSX.Element {
       <div className="mt-8">
         <h2 className="text-lg font-semibold mb-2">Materials</h2>
         <div className="mb-4">
-          <button onClick={fetchMaterials} className="px-3 py-1 bg-blue-600 text-white rounded">
+          <button onClick={fetchMaterials} className="px-3 py-1 bg-cyan-600 text-white rounded">
             Refresh
           </button>
         </div>
@@ -322,11 +322,11 @@ export default function Admin(): JSX.Element {
                 <div className="font-semibold">{m.title}</div>
                 <div className="text-xs text-gray-500">{m.fileType} • {new Date(m.createdAt).toLocaleString()}</div>
               </div>
-              <div className="space-x-2">
-                <a href={`/api/materials/download?id=${m.id}`} target="_blank" rel="noreferrer" className="px-2 py-1 bg-blue-600 text-white rounded">
+              <div className="flex space-x-2">
+                <a href={`/api/materials/download?id=${m.id}`} target="_blank" rel="noreferrer" className="px-2 py-1 bg-emerald-600 text-white rounded">
                   Open
                 </a>
-                <button onClick={() => handleDelete(m.id)} className="px-2 py-1 bg-red-500 text-white rounded">
+                <button onClick={() => handleDelete(m.id)} className="px-2 py-1 bg-fuchsia-700 text-white rounded">
                   Delete
                 </button>
               </div>
@@ -351,4 +351,3 @@ export async function getServerSideProps(ctx: any) {
 
   return { props: {} }
 }
-

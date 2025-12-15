@@ -27,15 +27,15 @@ export default function AdminLogin(){
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-      <h1 className="text-xl font-bold mb-4">Admin Login</h1>
+      <h1 className="text-xl text-fuchsia-500 font-bold mb-4">Admin Login</h1>
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label className="block text-sm">Password</label>
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 block w-full border rounded p-2" />
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 block w-full  ring-2 ring-fuchsia-500  rounded p-2" />
         </div>
         <div>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded" disabled={loading}>{loading ? 'Checking...':'Log in'}</button>
-        </div>
+          <button className="px-4 py-2 mx-auto block bg-gradient-to-r from-cyan-500 to-blue-500 bg-[length:200%_200%] bg-left text-white hover:bg-right hover:scale-105 hover:shadow-lg active:scale-95 rounded" disabled={loading}>{loading ? 'Checking...':'Log in'}</button>
+        </div> 
         {adminKey && (
           <div>
             <button type="button" onClick={useSecret} className="px-4 py-2 bg-green-600 text-white rounded">Use secret link</button>

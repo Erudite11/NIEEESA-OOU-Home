@@ -11,7 +11,7 @@ export default function Semesters(){
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4"> {level} Level / Select Semester</h1>
+      <h1 className="text-lg font-sans font-bold text-gray-700 mb-4"> {level} Level / Semester</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {semesters.map(s => (
           <Card key={s} className="hover:shadow-md">
