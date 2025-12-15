@@ -50,10 +50,10 @@ export default function Header() {
       <div className="marquee-wrapper  bg-gradient-to-r from-fuchsia-200 to-cyan-50">
         <div className="marquee-track">
           <span className="marquee-item text-gradient text-lg font-semibold">
-            Welcome NIEEESA'ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
+            Welcome NIEEESA&apos;ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
           </span>
           <span className="marquee-item text-gradient text-lg font-semibold">
-            Welcome NIEEESA'ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
+            Welcome NIEEESA&apos;ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
           </span>
         </div>
      </div>
