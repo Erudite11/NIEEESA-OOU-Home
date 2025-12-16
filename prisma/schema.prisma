@@ -11,12 +11,13 @@ datasource db {
 // current SQLite connector in this environment does not support
 // Prisma enums. Application code enforces allowed values.
 model Material {
-  id        Int      @id @default(autoincrement())
-  title     String
-  level     String
-  semester  String
-  fileType  String
-  url       String
-  originalName String?
-  createdAt DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  title         String
+  level         String
+  semester      String
+  fileType      String
+  url           String
+  publicId      String?   
+  originalName  String?
+  createdAt     DateTime @default(now())
 }

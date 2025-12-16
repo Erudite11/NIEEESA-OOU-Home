@@ -133,97 +133,68 @@ export default function Admin(): JSX.Element {
     return json
   }
 
-  async function handleUpload(e: any) {
-    e.preventDefault()
-    if (!file) {
-      showStatus('Please choose a file', 'error')
-      return
-    }
-    setLoading(true)
-    setProgress(null)
-    setStatusMessage(null)
-
-    try {
-      const preferSupabase = (forceSupabase && supabaseConfigured) || (supabaseConfigured && file.size > LARGE_FILE_THRESHOLD)
-      if (preferSupabase) {
-        const uploadJson: any = await uploadViaServerSupabase(file)
-        setLoading(false)
-        // If server already created the DB record, uploadJson.id will be present and we can skip calling /api/admin/create
-        if (uploadJson && uploadJson.id) {
-          setLastStorage('supabase')
-          showStatus('Uploaded to Supabase', 'success')
-          setTitle('')
-          setFile(null)
-          fetchMaterials()
-          return
-        }
-
-        // Otherwise, the server uploaded the object but didn't create a DB row; create it now
-        const publicUrl = uploadJson.url as string
-        const createRes = await fetch('/api/admin/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title || 'Untitled', level, semester, fileType, url: publicUrl, storage: 'supabase', originalName: file.name }) })
-        const createJson = await createRes.json()
-        if (createJson.success) {
-          setLastStorage('supabase')
-          showStatus('Uploaded to Supabase', 'success')
-          setTitle('')
-          setFile(null)
-          fetchMaterials()
-        } else throw new Error(createJson.error || 'create failed')
-        return
-      }
-
-      // server-side upload
-      const form = new FormData()
-      form.append('title', title)
-      form.append('level', level)
-      form.append('semester', semester)
-      form.append('fileType', fileType)
-      form.append('file', file)
-      const res = await fetch('/api/admin/upload', { method: 'POST', body: form })
-      const json = await res.json()
-
-      if (json && json.fallback === 'supabase' && supabaseConfigured) {
-        try {
-          const publicUrl = await uploadViaServerSupabase(file)
-          const createRes = await fetch('/api/admin/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title || 'Untitled', level, semester, fileType, url: publicUrl, storage: 'supabase', originalName: file.name }) })
-          const createJson = await createRes.json()
-          setLoading(false)
-          if (createJson.success) {
-            setLastStorage('supabase')
-            showStatus('Uploaded to Supabase', 'success')
-            setTitle('')
-            setFile(null)
-            fetchMaterials()
-            return
-          } else throw new Error(createJson.error || 'create failed')
-        } catch (err: any) {
-          setLoading(false)
-          showStatus('Automatic Supabase retry failed: ' + (err.message || String(err)), 'error')
-          setProgress(null)
-          return
-        }
-      }
-
-      setLoading(false)
-      if (json && json.ok) {
-        setLastStorage(json.storage || null)
-        showStatus('Uploaded', 'success')
-        setTitle('')
-        setFile(null)
-        setProgress(null)
-        fetchMaterials()
-      } else {
-        setStatusKind('error')
-        setStatusMessage(json && json.error ? (json.error + (json.fallback ? ' (fallback: ' + json.fallback + ')' : '')) : 'Upload failed')
-        setProgress(null)
-      }
-    } catch (err: any) {
-      setLoading(false)
-      console.error(err)
-      showStatus('Upload failed: ' + (err.message || String(err)), 'error')
-      setProgress(null)
-    }
+ async function handleUpload(e: any) {
+  e.preventDefault()
+  if (!file) {
+    showStatus('Please choose a file', 'error')
+    return
   }
+
+  setLoading(true)
+  setStatusMessage(null)
+
+  try {
+    // 1 Get Cloudinary signature
+    const sigRes = await fetch('/api/admin/cloudinary-signature')
+    const sig = await sigRes.json()
+
+    // 2 Upload directly to Cloudinary
+    const form = new FormData()
+    form.append('file', file)
+    form.append('api_key', sig.apiKey)
+    form.append('timestamp', sig.timestamp)
+    form.append('signature', sig.signature)
+    form.append('folder', 'nieeesa')
+
+    const uploadRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${sig.cloudName}/auto/upload`,
+      { method: 'POST', body: form }
+    )
+
+    const uploadJson = await uploadRes.json()
+    if (!uploadJson.secure_url) {
+      throw new Error('Cloudinary upload failed')
+    }
+
+    // 3 Save metadata to DB
+    const saveRes = await fetch('/api/admin/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        title: title || 'Untitled',
+        level,
+        semester,
+        fileType,
+        url: uploadJson.secure_url,
+        publicId: uploadJson.public_id,
+        originalName: file.name,
+      }),
+    })
+
+    const saveJson = await saveRes.json()
+    if (!saveJson.success) throw new Error('DB save failed')
+
+    showStatus('Uploaded successfully', 'success')
+    setFile(null)
+    setTitle('')
+    fetchMaterials()
+  } catch (err: any) {
+    console.error(err)
+    showStatus(err.message || 'Upload failed', 'error')
+  } finally {
+    setLoading(false)
+  }
+}
 
   async function handleDelete(id: number) {
     if (!confirm('Delete this material?')) return
