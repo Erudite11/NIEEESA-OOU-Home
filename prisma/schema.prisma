@@ -3,13 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// Using string fields for Level/Semester/FileType because the
-// current SQLite connector in this environment does not support
-// Prisma enums. Application code enforces allowed values.
+
 model Material {
   id            Int      @id @default(autoincrement())
   title         String
