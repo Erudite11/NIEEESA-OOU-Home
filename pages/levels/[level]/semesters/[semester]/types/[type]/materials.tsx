@@ -26,7 +26,7 @@ export default function Materials(){
     const fetcher = async ()=>{
       setLoading(true)
       const res = await fetch(`/api/materials?level=${level}&semester=${semester}&fileType=${encodeURIComponent(type as string)}`)
-      const json = await res.json()
+      const json: Material[] = await res.json()
       setMaterials(json)
       setLoading(false)
     }
@@ -41,7 +41,7 @@ export default function Materials(){
 
   return (
     <div>
-      <h1 className="text-lg font-bold font-sans text-gray-700 mb-4">Materials</h1>
+      <h1 className="text-2xl font-bold mb-4">Materials</h1>
       <div className="flex items-center gap-4 mb-4">
   <Input placeholder="Search by title..." value={search} onChange={(e: ChangeEvent<HTMLInputElement>)=>{ setSearch(e.target.value); setPage(1) }} />
       </div>
@@ -55,7 +55,9 @@ export default function Materials(){
               <p className="text-sm text-gray-500">{m.fileType} • {new Date(m.createdAt).toLocaleDateString()}</p>
             </div>
             <div className="flex items-center gap-2">
-              <a href={m.url} target="_blank" rel="noreferrer"><Button>Download</Button></a>
+              <a href={`/api/materials/download?id=${m.id}`} rel="noreferrer">
+                <Button>Download</Button>
+              </a>
             </div>
           </Card>
         ))}
