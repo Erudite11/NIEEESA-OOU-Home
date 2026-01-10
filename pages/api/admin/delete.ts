@@ -1,13 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '../../../lib/prisma'
 import { isAdminAuthed } from '../../../lib/auth'
-import { v2 as cloudinary } from 'cloudinary'
+// Cloudinary removed in production cleanup
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
+// Note: We intentionally do not renumber IDs after deletes.
+// Gaps are expected when rows are deleted and preserve data integrity.
 
 export default async function handler(
   req: NextApiRequest,
@@ -35,18 +32,14 @@ export default async function handler(
       return res.status(404).json({ error: 'Material not found' })
     }
 
-    //  Delete from Cloudinary FIRST
-    if (material.publicId) {
-      await cloudinary.uploader.destroy(material.publicId, {
-        resource_type: 'auto',
-      })
-    }
+    // Cloudinary deletion removed (Supabase-only storage)
 
     //  Delete from DB
     await prisma.material.delete({
       where: { id: Number(id) },
     })
 
+    // Return success (IDs are not renumbered by design)
     return res.json({ success: true })
   } catch (err: any) {
     console.error(err)

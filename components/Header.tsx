@@ -1,15 +1,28 @@
 import Link from 'next/link'
 import Image from 'next/image';
 
+import { useRouter } from 'next/router'
+
 export default function Header() {
+  const router = useRouter()
+  const isHome = router.pathname === '/'
   return (
     <header className="bg-blue-50 shadow-sm">
       <div className="max-w-6xl mx-auto px-2 py-2 flex items-center justify-between ">
         <div className="flex items-center gap-3">
           <div className=" flex font-bold"></div>
-          <Image src="/assests/oou.jpg" alt="" width={40} height={40} />
-          <Image src="/assests/nieesa.jpg" alt="" width={40} height={40} /> 
-          <p className='text-lg font-bold'>OOU-NIEEESA</p>
+          {isHome ? (
+            <>
+              <Image src="/assets/oou.jpg" alt="OOU" width={40} height={40} />
+              <Image src="/assets/nieesa.jpg" alt="NIEEESA" width={40} height={40} />
+              <p className='text-lg font-bold'>OOU-NIEEESA</p>
+            </>
+          ) : (
+            <>
+              <Image src="/assets/nieesa.jpg" alt="NIEEESA" width={40} height={40} />
+              <p className='text-lg font-bold'>NIEEESA</p>
+            </>
+          )}
         </div>
 
         <nav className="flex items-center gap-6 ">
@@ -47,16 +60,18 @@ export default function Header() {
           </Link>
         </nav>
       </div>
-      <div className="marquee-wrapper  bg-gradient-to-r from-fuchsia-200 to-cyan-50">
-        <div className="marquee-track">
-          <span className="marquee-item text-gradient text-lg font-semibold">
-            Welcome NIEEESA&apos;ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
-          </span>
-          <span className="marquee-item text-gradient text-lg font-semibold">
-            Welcome NIEEESA&apos;ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
-          </span>
-        </div>
-     </div>
+      {isHome && (
+        <div className="marquee-wrapper  bg-gradient-to-r from-fuchsia-200 to-cyan-50">
+          <div className="marquee-track">
+            <span className="marquee-item text-gradient text-lg font-semibold">
+              Welcome NIEEESA&apos;ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
+            </span>
+            <span className="marquee-item text-gradient text-lg font-semibold">
+              Welcome NIEEESA&apos;ites! Access essential Electrical and Electronics Engineering resources quickly and easily. National Institute of Electrical and Electronics Engineering Student Association, OOU Chapter. Select your level to begin.
+            </span>
+          </div>
+       </div>
+      )}
     </header>
   )
 }

@@ -1,18 +1,13 @@
-<<<<<<< HEAD
 .env
-=======
->>>>>>> 8f636074ce989c8dc2bd623ee97589de2a6ef201
 .env.local
 node_modules/
 .next/
 .DS_Store
-.env.local.example
-<<<<<<< HEAD
+.docs/
+!.env.local.example
+# Local dev scratch
 .script/
 .uploads/
-=======
-
->>>>>>> 8f636074ce989c8dc2bd623ee97589de2a6ef201
 # Logs
 logs
 *.log

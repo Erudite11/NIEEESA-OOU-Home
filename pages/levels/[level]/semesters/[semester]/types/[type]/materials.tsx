@@ -1,3 +1,4 @@
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState, ChangeEvent } from 'react'
 import Card from 'components/ui/Card'
@@ -19,6 +20,7 @@ export default function Materials(){
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [downloadingId, setDownloadingId] = useState<number | null>(null)
   const perPage = 5
 
   useEffect(()=>{
@@ -39,8 +41,26 @@ export default function Materials(){
   const start = (page - 1) * perPage
   const visible = filtered.slice(start, start + perPage)
 
+  const handleDownload = async (id: number) => {
+    setDownloadingId(id)
+    // The actual download is handled by the browser via the href
+    // We'll reset the loading state after a short delay
+    setTimeout(() => {
+      setDownloadingId(null)
+    }, 2000)
+  }
+
+  const title = level && semester && type ? `Level ${level} • ${semester} • ${type}` : 'Materials'
+  const desc = level && semester && type ? `Browse ${type} for Level ${level} • ${semester}.` : 'Browse materials.'
+
   return (
     <div>
+      <Head>
+        <title>{title} • NIEEESA Materials</title>
+        <meta name="description" content={desc} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={desc} />
+      </Head>
       <h1 className="text-2xl font-bold mb-4">Materials</h1>
       <div className="flex items-center gap-4 mb-4">
   <Input placeholder="Search by title..." value={search} onChange={(e: ChangeEvent<HTMLInputElement>)=>{ setSearch(e.target.value); setPage(1) }} />
@@ -49,14 +69,22 @@ export default function Materials(){
       {!loading && visible.length === 0 && <p>No materials found.</p>}
       <div className="space-y-4 mt-4">
         {visible.map(m => (
-          <Card key={m.id} className="flex justify-between items-center">
+          <Card key={m.id} className="reveal-card flex justify-between items-center">
             <div>
               <h3 className="font-semibold">{m.title}</h3>
               <p className="text-sm text-gray-500">{m.fileType} • {new Date(m.createdAt).toLocaleDateString()}</p>
             </div>
             <div className="flex items-center gap-2">
-              <a href={`/api/materials/download?id=${m.id}`} rel="noreferrer">
-                <Button>Download</Button>
+              <a href={`/api/materials/download?id=${m.id}`} rel="noreferrer" onClick={() => handleDownload(m.id)}>
+                <Button className="flex items-center gap-2" disabled={downloadingId === m.id}>
+                  {downloadingId === m.id && (
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {downloadingId === m.id ? 'Downloading...' : 'Download'}
+                </Button>
               </a>
             </div>
           </Card>

@@ -23,24 +23,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.setHeader('Content-Length', String(stat.size))
       res.setHeader('Content-Type', 'application/octet-stream')
       const fn = originalName || path.basename(filePath)
-      res.setHeader('Content-Disposition', `attachment; filename="${fn.replace(/"/g,'') }"
-`)
+      res.setHeader('Content-Disposition', `attachment; filename="${fn.replace(/"/g,'') }"`)
       const stream = fs.createReadStream(filePath)
       stream.pipe(res)
       return
     }
 
-    // Remote URL: fetch and proxy (buffers in memory)
+    // For Supabase public URLs, add download parameter to force download
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '')
+    if(supabaseUrl && url.includes(supabaseUrl) && url.includes('/storage/v1/object/public/')){
+      // Add download query parameter to force download instead of preview
+      const downloadUrl = url.includes('?') ? `${url}&download` : `${url}?download=${encodeURIComponent(originalName || 'file')}`
+      return res.redirect(downloadUrl)
+    }
+
+    // Remote URL (Cloudinary or other): fetch and proxy with streaming
     const fetchRes = await fetch(url)
     if(!fetchRes.ok) return res.status(502).json({ error: 'upstream fetch failed' })
+    
     const contentType = fetchRes.headers.get('content-type') || 'application/octet-stream'
-    const arrayBuffer = await fetchRes.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const contentLength = fetchRes.headers.get('content-length')
+    
     res.setHeader('Content-Type', contentType)
     const fn = originalName || path.basename(new URL(url).pathname || 'file')
     res.setHeader('Content-Disposition', `attachment; filename="${fn.replace(/"/g,'')}"`)
-    res.setHeader('Content-Length', String(buffer.length))
-    res.end(buffer)
+    if(contentLength) res.setHeader('Content-Length', contentLength)
+    
+    // Stream the response instead of buffering in memory (better for large files)
+    if(fetchRes.body){
+      const reader = fetchRes.body.getReader()
+      while(true){
+        const { done, value } = await reader.read()
+        if(done) break
+        res.write(Buffer.from(value))
+      }
+      res.end()
+    } else {
+      // Fallback to buffer method if streaming not available
+      const arrayBuffer = await fetchRes.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      res.end(buffer)
+    }
   }catch(err:any){
     console.error(err)
     res.status(500).json({ error: err.message || 'server error' })

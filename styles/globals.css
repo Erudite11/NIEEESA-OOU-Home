@@ -40,6 +40,18 @@ body { @apply bg-gray-50 text-gray-800; }
 }
 
 /* fallback keyframes (keeps dev predictable if Tailwind utilities are delayed) */
+
+/* Page fade transition */
+.page-fade { opacity: 0; transform: translateY(6px); animation: pageFadeIn .35s ease forwards; }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scroll fade+zoom cards */
+.reveal-card { opacity: 0; transform: translateY(20px) scale(.97); transition: opacity .5s ease-out, transform .5s ease-out; }
+.reveal-card.is-visible { opacity: 1; transform: translateY(0) scale(1); }
+
 @keyframes marquee {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }

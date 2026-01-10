@@ -13,18 +13,21 @@ export default function Admin(): JSX.Element {
   const [file, setFile] = useState<File | null>(null)
   const [materials, setMaterials] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [cloudinaryConfigured, setCloudinaryConfigured] = useState(false)
   const [supabaseConfigured, setSupabaseConfigured] = useState(false)
   const [lastStorage, setLastStorage] = useState<string | null>(null)
 
   const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024
-  const [forceSupabase, setForceSupabase] = useState(false)
+  const forceSupabase = true // Always use Supabase
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [statusKind, setStatusKind] = useState<'info' | 'success' | 'error'>('info')
   const [progress, setProgress] = useState<number | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  // Admin filters and UI state
+  const [adminSearch, setAdminSearch] = useState('')
+  const [filterTypeAdmin, setFilterTypeAdmin] = useState<'All' | string>('All')
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    setCloudinaryConfigured(!!process.env.NEXT_PUBLIC_CLOUDINARY)
     setSupabaseConfigured(!!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY))
     fetchMaterials()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -33,6 +36,13 @@ export default function Admin(): JSX.Element {
   function showStatus(msg: string | null, kind: 'info' | 'success' | 'error' = 'info') {
     setStatusMessage(msg)
     setStatusKind(kind)
+    
+    // Auto-dismiss after 5 seconds (except for info messages during upload)
+    if (msg && kind !== 'info') {
+      setTimeout(() => {
+        setStatusMessage(null)
+      }, 5000)
+    }
   }
 
   const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +51,7 @@ export default function Admin(): JSX.Element {
   }
 
   async function fetchMaterials() {
+    setRefreshing(true)
     try {
       const res = await fetch('/api/admin/list')
       const json = await res.json()
@@ -56,6 +67,8 @@ export default function Admin(): JSX.Element {
       }
     } catch (e) {
       setMaterials([])
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -142,31 +155,43 @@ export default function Admin(): JSX.Element {
 
   setLoading(true)
   setStatusMessage(null)
+  setProgress(null)
 
   try {
-    // 1 Get Cloudinary signature
-    const sigRes = await fetch('/api/admin/cloudinary-signature')
-    const sig = await sigRes.json()
+    let fileUrl: string
 
-    // 2 Upload directly to Cloudinary
-    const form = new FormData()
-    form.append('file', file)
-    form.append('api_key', sig.apiKey)
-    form.append('timestamp', sig.timestamp)
-    form.append('signature', sig.signature)
-    form.append('folder', 'nieeesa')
-
-    const uploadRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${sig.cloudName}/auto/upload`,
-      { method: 'POST', body: form }
-    )
-
-    const uploadJson = await uploadRes.json()
-    if (!uploadJson.secure_url) {
-      throw new Error('Cloudinary upload failed')
+    // Determine which upload method to use
+    if (supabaseConfigured && (forceSupabase || file.size >= LARGE_FILE_THRESHOLD)) {
+      // Use Supabase for large files or when forced
+      showStatus('Uploading to Supabase...', 'info')
+      setLastStorage('Supabase')
+      
+      if (file.size >= LARGE_FILE_THRESHOLD) {
+        // Large file: use server-side upload with service role key
+        const serverResult = await uploadViaServerSupabase(file)
+        // If server already created the DB record, we're done
+        if (serverResult.id) {
+          showStatus('Uploaded successfully to Supabase', 'success')
+          setFile(null)
+          setTitle('')
+          fetchMaterials()
+          return
+        }
+        fileUrl = serverResult.url
+      } else {
+        // Small file: direct upload from browser
+        fileUrl = await uploadToSupabaseDirect(file)
+      }
+    } else if (false) {
+      // Use Cloudinary if configured and Supabase not preferred
+      // Cloudinary upload path removed in production cleanup
+      throw new Error('Supabase not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    } else {
+      throw new Error('No storage provider configured. Please set up Supabase or Cloudinary in .env.local')
     }
 
-    // 3 Save metadata to DB
+    // Save metadata to DB
+    showStatus('Saving to database...', 'info')
     const saveRes = await fetch('/api/admin/create', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -175,8 +200,8 @@ export default function Admin(): JSX.Element {
         level,
         semester,
         fileType,
-        url: uploadJson.secure_url,
-        publicId: uploadJson.public_id,
+        url: fileUrl,
+        publicId: null,
         originalName: file.name,
       }),
     })
@@ -184,9 +209,20 @@ export default function Admin(): JSX.Element {
     const saveJson = await saveRes.json()
     if (!saveJson.success) throw new Error('DB save failed')
 
-    showStatus('Uploaded successfully', 'success')
+    showStatus('Uploaded successfully!', 'success')
+    
+    // Clear form completely
     setFile(null)
     setTitle('')
+    setProgress(null)
+    setLevel(levels[0])
+    setSemester(semesters[0])
+    setFileType(types[0])
+    
+    // Clear file input by resetting the form
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    if (fileInput) fileInput.value = ''
+    
     fetchMaterials()
   } catch (err: any) {
     console.error(err)
@@ -212,10 +248,10 @@ export default function Admin(): JSX.Element {
     <div className="p-6">
       <div className="mb-4">
         <span className="text-sm text-gray-600">Storage:</span>
-        {cloudinaryConfigured ? (
-          <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded text-sm">Cloudinary env present</span>
+        {supabaseConfigured ? (
+          <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded text-sm">Supabase</span>
         ) : (
-          <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">Cloudinary</span>
+          <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">Supabase not configured</span>
         )}
         {lastStorage && <span className="ml-3 text-xs text-gray-500">Last upload: {lastStorage}</span>}
       </div>
@@ -262,14 +298,6 @@ export default function Admin(): JSX.Element {
         <div>
           <label className="block text-sm font-medium">File</label>
           <input type="file" onChange={handleFile} className="mt-1 bg-blue-50" />
-          {supabaseConfigured && (
-            <div className="mt-2 text-sm">
-              <label className="inline-flex items-center">
-                <input type="checkbox" checked={forceSupabase} onChange={(e) => setForceSupabase(e.target.checked)} className="mr-2" />
-                <span className="text-xs">Force Supabase upload (use direct upload even for small files)</span>
-              </label>
-            </div>
-          )}
         </div>
 
         <div>
@@ -280,30 +308,101 @@ export default function Admin(): JSX.Element {
       </form>
 
       <div className="mt-8">
-        <h2 className="text-lg font-semibold mb-2">Materials</h2>
-        <div className="mb-4">
-          <button onClick={fetchMaterials} className="px-3 py-1 bg-cyan-600 text-white rounded">
-            Refresh
-          </button>
+        <h2 className="text-lg font-semibold mb-2">Materials <span className="text-sm text-gray-500">({materials.length})</span></h2>
+        <div className="mb-4 flex flex-col gap-3">
+          <div>
+            <button onClick={fetchMaterials} disabled={refreshing} className="px-3 py-1 bg-cyan-600 text-white rounded flex items-center gap-2">
+              {refreshing && (
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input
+              value={adminSearch}
+              onChange={(e) => setAdminSearch(e.target.value)}
+              placeholder="Search by title..."
+              className="px-3 py-2 border rounded bg-white"
+            />
+            <select value={filterTypeAdmin} onChange={(e) => setFilterTypeAdmin(e.target.value)} className="px-3 py-2 border rounded bg-white">
+              <option value="All">All Types</option>
+              {types.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <div className="text-sm text-gray-500 flex items-center">Tip: Click a group header to collapse/expand</div>
+          </div>
         </div>
-        <div className="space-y-2">
-          {materials.map((m) => (
-            <div key={m.id} className="p-3 bg-white rounded flex justify-between items-center">
-              <div>
-                <div className="font-semibold">{m.title}</div>
-                <div className="text-xs text-gray-500">{m.fileType} • {new Date(m.createdAt).toLocaleString()}</div>
-              </div>
-              <div className="flex space-x-2">
-                <a href={`/api/materials/download?id=${m.id}`} target="_blank" rel="noreferrer" className="px-2 py-1 bg-emerald-600 text-white rounded">
-                  Open
-                </a>
-                <button onClick={() => handleDelete(m.id)} className="px-2 py-1 bg-fuchsia-700 text-white rounded">
-                  Delete
-                </button>
-              </div>
+
+        {(() => {
+          // Group by Level and Semester, keeping a nice order
+          const levelOrder = new Map(levels.map((l, i) => [l, i]))
+          const semOrder = new Map(semesters.map((s, i) => [s, i]))
+
+          const groups: { level: string; semester: string; items: any[] }[] = []
+          for (const l of levels) {
+            for (const s of semesters) {
+              const items = materials
+                .filter((m) => m.level === l && m.semester === s)
+                // Apply admin filters
+                .filter((m) => (filterTypeAdmin === 'All' ? true : m.fileType === filterTypeAdmin))
+                .filter((m) => (adminSearch.trim() ? m.title.toLowerCase().includes(adminSearch.toLowerCase()) : true))
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              if (items.length) groups.push({ level: l, semester: s, items })
+            }
+          }
+
+          if (groups.length === 0) {
+            return <div className="text-sm text-gray-500">No materials yet.</div>
+          }
+
+          return (
+            <div className="space-y-6">
+              {groups.map((g) => (
+                <div key={`${g.level}-${g.semester}`} className="border border-gray-100 rounded overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed((prev) => ({ ...prev, [`${g.level}-${g.semester}`]: !prev[`${g.level}-${g.semester}`] }))}
+                    className="w-full text-left px-3 py-2 bg-gray-50 border-b text-sm font-semibold flex items-center justify-between hover:bg-gray-100"
+                  >
+                    <div>
+                      Level {g.level} • {g.semester}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs text-gray-500">{g.items.length} item{g.items.length === 1 ? '' : 's'}</div>
+                      <svg className={`h-4 w-4 transition-transform ${collapsed[`${g.level}-${g.semester}`] ? '-rotate-90' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.27a.75.75 0 01-.02-1.06z" clipRule="evenodd" /></svg>
+                    </div>
+                  </button>
+                  {!collapsed[`${g.level}-${g.semester}`] && (
+                    <div className="divide-y">
+                      {g.items.map((m) => (
+                        <div key={m.id} className="p-3 bg-blue-50 flex justify-between items-center">
+                          <div>
+                            <div className="font-semibold">{m.title}</div>
+                            <div className="text-xs text-gray-500">{m.fileType} • {new Date(m.createdAt).toLocaleString()}</div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <a href={`/api/materials/download?id=${m.id}`} target="_blank" rel="noreferrer" className="px-2 py-1 bg-emerald-600 text-white rounded">
+                              Open
+                            </a>
+                            <button onClick={() => handleDelete(m.id)} className="px-2 py-1 bg-fuchsia-700 text-white rounded">
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )
+        })()}
+
       </div>
     </div>
   )

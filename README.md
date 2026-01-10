@@ -1,53 +1,111 @@
-# NIEEESA home — v1
+# NIEEESA Materials Portal
 
 This is a Next.js + TypeScript + Tailwind project for a student materials portal (v1).
 
-Features implemented in this version:
+Production-ready stack:
 
-- Next.js app (pages router) with Tailwind styling
-- Prisma with SQLite and a Material model
-- API route to fetch materials by level, semester and file type
-- Admin dashboard to upload files (uploads to Cloudinary) and save URL to DB
-- Student flow: choose Level → Semester → Material Type → View materials and download
+- Next.js (pages router) + TypeScript + Tailwind CSS
+- Prisma + Supabase Postgres
+- Supabase Storage for file uploads/downloads
+- API routes for list/download
+- Admin dashboard for uploads and management
+- Student flow: Level → Semester → Type → Materials → Download
 
-Admin notes (auth and admin features)
+Admin
 
-- Admin login: visit `/admin/login` and enter the password set in `ADMIN_PASSWORD` in your `.env` file. If `ADMIN_PASSWORD` is not set, admin login is allowed by default (convenience for local dev).
-- After logging in the server sets an HttpOnly cookie and admin APIs (`/api/admin/*`) require that cookie.
-- Admin can edit title, level, semester, file type and URL inline in the admin dashboard. Files can be replaced using the replace action which uploads a new file to Cloudinary and updates the record.
+- Login: `/admin/login` — password from `ADMIN_PASSWORD`
+- Admin APIs use an Http Only cookie after login
+- Uploads go to Supabase Storage; metadata saved in DB
+- Grouped list by Level and Semester with filters (type, search)
+- Delete and open actions per material
+- Modernized login UI with show/hide password
 
-Seeding
-
-- A seed script exists at `scripts/seed.js`. Run it with `node scripts/seed.js` to insert sample materials into the database.
-- There's also an HTTP seed endpoint `POST /api/seed` (protected by admin cookie) if you prefer calling via the dev server.
 
 Getting started
 
-1. Copy the env example and fill credentials:
+### 1. Set up Supabase (Required)
 
-   cp .env.example .env
-   # set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET if you want uploads
+This project uses Supabase for file storage and PostgreSQL database.
 
-2. Install dependencies:
+**a) Create a Supabase project:**
+   - Go to [https://supabase.com](https://supabase.com) and create a free account
+   - Create a new project (note: it takes ~2 minutes to set up)
 
-   npm install
+**b) Create a storage bucket:**
+   - In your Supabase dashboard, go to **Storage**
+   - Click **New bucket**
+   - Name it `materials` (or use a different name and update `.env`)
+   - Make it **Public** so files can be downloaded directly
+   - Click **Create bucket**
 
-3. Generate Prisma client and run an initial migration (creates SQLite DB):
+**c) Get your credentials:**
+   - Go to **Project Settings** > **API**
+   - Copy your **Project URL** and **anon/public key**
+   - Copy your **service_role key** (keep this secret!)
+   - Go to **Project Settings** > **Database**
+   - Copy the **Connection pooling** URL (for `DATABASE_URL`)
+   - Copy the **Connection string** URL (for `DIRECT_URL`)
 
-   npx prisma generate
-   npx prisma migrate dev --name init
+### 2. Configure environment variables
 
-4. Run the dev server:
+Copy the example env file and fill in your Supabase credentials:
 
-   npm run dev
+```bash
+cp .env.local.example .env.local
+```
+
+Edit `.env.local` and fill in:
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+- `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
+- `NEXT_PUBLIC_SUPABASE_BUCKET` - Your bucket name (default: `materials`)
+- `DATABASE_URL` - Your Supabase connection pooling URL
+- `DIRECT_URL` - Your Supabase direct connection URL
+- `ADMIN_PASSWORD` - Set a secure password for admin access
+
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+### 4. Set up the database
+
+Generate Prisma client and run migrations:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+If you see errors about missing DIRECT_URL/DATABASE_URL, fill them in `.env.local` using your Supabase dashboard values.
+
+### 5. Run the development server
+
+```bash
+npm run dev
+```
+
+Open (http://localhost:3000) to view the app.
+
+- Admin dashboard: (http://localhost:3000/admin/login)
+
+## How file uploads/downloads work
+
+- Uploads go to Supabase Storage (client direct for small files, server for large files)
+- Downloads:
+  - Supabase public URLs: redirected with `?download` to force download
+  - Other external URLs: streamed via API with proper headers
+  - Local files (legacy): served from `/public/uploads`
 
 Notes
 
-- Uploading files requires Cloudinary credentials. If you don't want to use Cloudinary, remove the upload logic and save URLs manually or implement Supabase Storage.
-- "shadcn UI" styling: this project uses Tailwind and simple components inspired by shadcn; to fully integrate the shadcn UI component library, follow their docs and generate components into `components/ui`.
+- Storage provider: Supabase only (Cloudinary removed)
+- Styling: Tailwind with lightweight components; can be extended with any UI kit
 
-Next steps (planned):
+Production features
 
-- Add authentication for admin
-- Implement edit flow for materials
-- Add client-side search/filter and pagination
+- Dynamic page titles/descriptions for SEO
+- Page transition animations + scroll-reveal on cards
+- Favicon and OG image set to /assets/nieesa.jpg
+- robots.txt and sitemap.xml included

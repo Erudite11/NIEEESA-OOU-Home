@@ -4,7 +4,36 @@ import Button from '../components/ui/Button'
 
 const levels = ['100','200','300','400','500']
 
+import { useEffect } from 'react'
+
 export default function Home(){
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll('.reveal-card')) as HTMLElement[]
+
+    // Immediately reveal cards already in viewport on first load
+    els.forEach((el) => {
+      const rect = el.getBoundingClientRect()
+      if (rect.top < window.innerHeight * 0.9) {
+        el.classList.add('is-visible')
+      }
+    })
+
+    if ('IntersectionObserver' in window) {
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+          }
+        })
+      }, { root: null, rootMargin: '0px', threshold: 0.2 })
+      els.forEach(el => obs.observe(el))
+      return () => obs.disconnect()
+    } else {
+      // Fallback: just show all
+      els.forEach(el => el.classList.add('is-visible'))
+    }
+  }, [])
+
   return (
     
     <div className="bg-gradient-to-b from-blue-50 to-white -mt-4">   
@@ -18,7 +47,7 @@ export default function Home(){
           <h2 className="text-2xl font-bold mb-4" id='level'>Select Level</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {levels.map(level => (
-              <Card key={level} className="hover:shadow-lg hover:-translate-y-1 transform transition rounded-xl bg-gradient-to-t from-fuchsia-200 to-cyan-50 ">
+              <Card key={level} className="reveal-card hover:shadow-lg hover:-translate-y-1 transform transition rounded-xl bg-gradient-to-t from-fuchsia-200 to-cyan-50 ">
                 <div className="flex flex-col justify-between h-full">
                   <div>
                     <div className="text-3xl">🎓</div>
