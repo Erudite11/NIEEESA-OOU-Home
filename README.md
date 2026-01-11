@@ -48,6 +48,20 @@ This project uses Supabase for file storage and PostgreSQL database.
 
 ### 2. Configure environment variables
 
+#### Env file priority (local)
+
+Next.js loads environment variables in this order (highest priority first):
+
+1. `.env.local`
+2. `.env.development` / `.env.production`
+3. `.env`
+
+So in local development/production on your machine, your **API routes** will read variables from `.env.local` if present.
+
+On **Vercel**, env files are not used — set the same variables in the Vercel project settings.
+
+### 2. Configure environment variables
+
 Copy the example env file and fill in your Supabase credentials:
 
 ```bash
@@ -59,9 +73,11 @@ Edit `.env.local` and fill in:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
 - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
 - `NEXT_PUBLIC_SUPABASE_BUCKET` - Your bucket name (default: `materials`)
-- `DATABASE_URL` - Your Supabase connection pooling URL
-- `DIRECT_URL` - Your Supabase direct connection URL
+- `DATABASE_URL` - Your Supabase connection pooler URL (recommended for runtime)
+- `DIRECT_URL` - Your Supabase direct connection URL (recommended for migrations)
 - `ADMIN_PASSWORD` - Set a secure password for admin access
+
+**Windows/DNS note:** If you see Prisma errors connecting to `db.<ref>.supabase.co:5432`, your network/DNS may be blocking or failing to resolve the direct host. Use the pooler for `DATABASE_URL` and run migrations from a network that allows 5432, or run SQL migrations from Supabase SQL Editor.
 
 ### 3. Install dependencies
 

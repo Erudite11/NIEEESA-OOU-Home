@@ -28,8 +28,13 @@ export default function Materials(){
     const fetcher = async ()=>{
       setLoading(true)
       const res = await fetch(`/api/materials?level=${level}&semester=${semester}&fileType=${encodeURIComponent(type as string)}`)
-      const json: Material[] = await res.json()
-      setMaterials(json)
+      const json = await res.json()
+      if (Array.isArray(json)) {
+        setMaterials(json)
+      } else {
+        console.warn('/api/materials returned non-array:', json)
+        setMaterials([])
+      }
       setLoading(false)
     }
     fetcher()
@@ -69,7 +74,7 @@ export default function Materials(){
       {!loading && visible.length === 0 && <p>No materials found.</p>}
       <div className="space-y-4 mt-4">
         {visible.map(m => (
-          <Card key={m.id} className="reveal-card flex justify-between items-center">
+          <Card key={m.id} className="flex justify-between items-center">
             <div>
               <h3 className="font-semibold">{m.title}</h3>
               <p className="text-sm text-gray-500">{m.fileType} • {new Date(m.createdAt).toLocaleDateString()}</p>
