@@ -262,11 +262,11 @@ export default function Admin(): JSX.Element {
 
         <div>
           <label className="block text-sm font-medium">File</label>
-          <input type="file" onChange={handleFile} className="mt-1 bg-blue-50" />
+          <input type="file" onChange={handleFile} className="mt-1 bg-blue-50 w-full max-w-full" />
         </div>
 
         <div>
-          <button className="px-4 py-2  bg-gradient-to-l from-fuchsia-400 to-green-400 text-white rounded" disabled={loading}>
+          <button className="h-10 px-4 bg-gradient-to-l from-fuchsia-400 to-green-400 text-white rounded flex items-center justify-center" disabled={loading}>
             {loading ? 'Uploading...' : 'Upload'}
           </button>
         </div>
@@ -276,7 +276,7 @@ export default function Admin(): JSX.Element {
         <h2 className="text-lg font-semibold mb-2">Materials <span className="text-sm text-gray-500">({materials.length})</span></h2>
         <div className="mb-4 flex flex-col gap-3">
           <div>
-            <button onClick={fetchMaterials} disabled={refreshing} className="px-3 py-1 bg-cyan-600 text-white rounded flex items-center gap-2">
+            <button onClick={fetchMaterials} disabled={refreshing} className="h-10 px-4 bg-cyan-600 text-white rounded flex items-center gap-2">
               {refreshing && (
                 <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -348,13 +348,20 @@ export default function Admin(): JSX.Element {
                         <div key={m.id} className="p-3 bg-blue-50 flex justify-between items-center">
                           <div>
                             <div className="font-semibold">{m.title}</div>
-                            <div className="text-xs text-gray-500">{m.fileType} • {new Date(m.createdAt).toLocaleString()}</div>
+                            <div className="text-xs text-gray-500 flex flex-wrap gap-x-1 gap-y-0.5">
+  <span className="whitespace-nowrap">{m.fileType}</span>
+  <span className="opacity-60">•</span>
+  <span className="whitespace-nowrap">
+    {new Date(m.createdAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}{' '}
+    {new Date(m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+  </span>
+</div>
                           </div>
                           <div className="flex space-x-2">
-                            <a href={`/api/materials/download?id=${m.id}`} target="_blank" rel="noreferrer" className="px-2 py-1 bg-emerald-600 text-white rounded">
+                            <a href={`/api/materials/download?id=${m.id}`} target="_blank" rel="noreferrer" className="h-9 px-3 bg-emerald-600 text-white rounded inline-flex items-center justify-center">
                               Open
                             </a>
-                            <button onClick={() => handleDelete(m.id)} className="px-2 py-1 bg-fuchsia-700 text-white rounded">
+                            <button onClick={() => handleDelete(m.id)} className="h-9 px-3 bg-fuchsia-700 text-white rounded inline-flex items-center justify-center">
                               Delete
                             </button>
                           </div>
