@@ -16,7 +16,6 @@ export default function Admin(): JSX.Element {
   const [supabaseConfigured, setSupabaseConfigured] = useState(false)
   const [lastStorage, setLastStorage] = useState<string | null>(null)
 
-  const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024
   const forceSupabase = true // Always use Supabase
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [statusKind, setStatusKind] = useState<'info' | 'success' | 'error'>('info')
@@ -129,23 +128,6 @@ export default function Admin(): JSX.Element {
     return publicUrl
   }
 
-  async function uploadViaServerSupabase(file: File) {
-    // POST multipart to server endpoint which will upload using service role key
-    const form = new FormData()
-    form.append('title', title)
-    form.append('level', level)
-    form.append('semester', semester)
-    form.append('fileType', fileType)
-    form.append('file', file)
-
-    const res = await fetch('/api/admin/upload-supabase', { method: 'POST', body: form })
-    const json = await res.json()
-    if (!res.ok) throw new Error((json && (json.error || json.detail)) ? JSON.stringify(json) : 'Server upload failed')
-    if (!json || !json.url) throw new Error('Invalid upload response')
-    // Return full json so caller can detect if the server already created the DB record (json.id)
-    return json
-  }
-
  async function handleUpload(e: any) {
   e.preventDefault()
   if (!file) {
@@ -160,28 +142,11 @@ export default function Admin(): JSX.Element {
   try {
     let fileUrl: string
 
-    // Determine which upload method to use
-    if (supabaseConfigured && (forceSupabase || file.size >= LARGE_FILE_THRESHOLD)) {
-      // Use Supabase for large files or when forced
+    // Upload directly to Supabase Storage from the browser (Vercel-safe for large files)
+    if (supabaseConfigured && forceSupabase) {
       showStatus('Uploading to Supabase...', 'info')
       setLastStorage('Supabase')
-      
-      if (file.size >= LARGE_FILE_THRESHOLD) {
-        // Large file: use server-side upload with service role key
-        const serverResult = await uploadViaServerSupabase(file)
-        // If server already created the DB record, we're done
-        if (serverResult.id) {
-          showStatus('Uploaded successfully to Supabase', 'success')
-          setFile(null)
-          setTitle('')
-          fetchMaterials()
-          return
-        }
-        fileUrl = serverResult.url
-      } else {
-        // Small file: direct upload from browser
-        fileUrl = await uploadToSupabaseDirect(file)
-      }
+      fileUrl = await uploadToSupabaseDirect(file)
     } else if (false) {
       // Use Cloudinary if configured and Supabase not preferred
       // Cloudinary upload path removed in production cleanup
